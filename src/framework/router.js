@@ -1,12 +1,30 @@
 'use client';
 
-import {useState} from 'react';
+import {useState, createContext, use} from 'react';
+import {
+  createFromFetch,
+  createFromReadableStream,
+} from 'react-server-dom-webpack/client';
 
+const RouterContext = createContext();
 const initialCache = new Map();
 
-export default function Router() {
+export function Router() {
   const [cache, setCache] = useState(initialCache);
   const [location, setLocation] = useState({});
 
-  return <div>Router</div>;
+  const locationKey = JSON.stringify(location);
+  let content = cache.get(locationKey);
+  if (!content) {
+    content = createFromFetch(
+      fetch('/react?location=' + encodeURIComponent(locationKey))
+    );
+    cache.set(locationKey, content);
+  }
+
+  return (
+    <RouterContext.Provider value={{location}}>
+      {use(content)}
+    </RouterContext.Provider>
+  );
 }
